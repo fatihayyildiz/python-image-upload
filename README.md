@@ -1,5 +1,5 @@
-# Employee-Attendance-Management
-Project and Implementation of  Employee Attendance Management with Django
+# python-image-upload
+Boilerplate python image upload
 
 ## Get Started
 
