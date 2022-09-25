@@ -15,14 +15,15 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-    
+
     def create_superuser(self, email, password):
         """Creates and saves a new super user"""
-        user = self.create_user(email,password)
+        user = self.create_user(email, password)
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
         return user
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     """Custom user model that supports using email instead username"""
@@ -36,73 +37,29 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
 
 
-class ProfilePic(models.Model):
-    """User profile model"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='profilepics/', blank=True)
-
-    def __str__(self):
-        return self.user.name
-   
-    def create_user_profile_pic(sender, **kwargs):
-        if kwargs['created']:
-            user_profile = ProfilePic.objects.create(user=kwargs['instance'])
-           
-    post_save.connect(create_user_profile_pic, sender=User)   
-
-    def create_annual_leave_limit(sender, **kwargs):
-        if kwargs['created']:
-            AnnualLimit.objects.create(
-                user=kwargs['instance'],
-                annual_leave_limit=25
-                )
-           
-    post_save.connect(create_annual_leave_limit, sender=User)   
-
 def upload_to(instance, filename):
-    return 'profilepics/{filename}'.format(filename=filename)
+    return 'collectedImages/{filename}'.format(filename=filename)
 
-class BaseLeaveModel(models.Model):
 
+class BaseImageModel(models.Model):
     class Meta:
-        abstract=True
+        abstract = True
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    STATUS_CHOICES = (
+    name = models.CharField(max_length=255)
+    image = models.ImageField(_("Image"), upload_to=upload_to, default='collectedImages/no_name300x300.jpg')
+    width = models.FloatField(name='width', default=0)
+    height = models.FloatField(name='height', default=0)
+    url = models.CharField(max_length=255)
+    alt = models.CharField(max_length=255)
 
-        ('waiting', 'WAITING'),
-        ('approved', 'APPROVED'),
-        ('declined', 'DECLINED'),
-    )
-
-    leave_type = models.CharField(max_length=255)
-    image = models.ImageField(_("Image"), upload_to=upload_to, default='profilepics/ydl-logo.png')
-    leave_start_date  = models.DateField()
-    leave_end_date = models.DateField()
-    leave_start_time = models.TimeField()
-    leave_end_time = models.TimeField()
-    leave_reason = models.TextField()
-    status = models.CharField(max_length = 30, choices = STATUS_CHOICES, default = "waiting")
-    days = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.leave_type
+        return self.name
 
     def save(self, *args, **kwargs):
-        if self.status == 'declined':
-            self.days = 0
-        return super(BaseLeaveModel, self).save(*args, **kwargs)    
+        return super(BaseImageModel, self).save(*args, **kwargs)
 
-class Leave(BaseLeaveModel):
+
+class Image(BaseImageModel):
     pass
-
-class ArchivedLeave(BaseLeaveModel):
-    pass
-
-class AnnualLimit(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    annual_leave_limit = models.IntegerField(blank=True)
-
-    def __str__(self):
-        return self.user.name
-    
